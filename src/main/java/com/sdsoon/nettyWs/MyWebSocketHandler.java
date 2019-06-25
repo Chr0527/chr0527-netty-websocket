@@ -24,45 +24,51 @@ public class MyWebSocketHandler extends SimpleChannelInboundHandler<Object> {
      * 每当从服务端收到新的客户端连接时， 客户端的 Channel 存入ChannelGroup列表中，
      * 并通知列表中的其他客户端 Channel
      */
+    //当有人连接时,调用
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception { // (2)
         Channel incoming = ctx.channel();
         for (Channel channel : NettyConfig.group) {
-            channel.writeAndFlush("[SERVER] - " + incoming.remoteAddress() + " 加入\n");
+            channel.writeAndFlush(new TextWebSocketFrame("[SERVER] - " + incoming.remoteAddress() + " 加入\n"));
         }
+        //加入群聊
         NettyConfig.group.add(ctx.channel());
-//        ctx.channel().id();
-//        NettyConfig.group.find(ChannelId);
     }
 
     /*
      * 每当从服务端收到客户端断开时，客户端的 Channel 移除 ChannelGroup 列表中，
      *  并通知列表中的其他客户端 Channel
      */
+    //当有人离开时,下线时,调用
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
         Channel incoming = ctx.channel();
         for (Channel channel : NettyConfig.group) {
-            channel.writeAndFlush("[SERVER] - " + incoming.remoteAddress() + " 离开\n");
+            channel.writeAndFlush(new TextWebSocketFrame("[SERVER] - " + incoming.remoteAddress() + " 离开\n"));
         }
+        //移除群聊
         NettyConfig.group.remove(ctx.channel());
     }
 
     /**
-     * 服务端监听到客户端活动
+     * 服务端监听到客户端活动:如果有客户端连接,就打印在控制台上
      */
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         Channel incoming = ctx.channel();
+        //打印
+        // incoming.remoteAddress():得到连接人的ip地址
         System.out.println("Client:" + incoming.remoteAddress() + "在线");
     }
 
-    /*
-     * 客户端与服务端断开连接的时候调用
+    /**
+     * 客户端与服务端断开连接的时候调用:如果有人下线就打印在控制台
      */
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         Channel incoming = ctx.channel();
+        //打印
+        // incoming.remoteAddress():得到连接人的ip地址
         System.out.println("Client:" + incoming.remoteAddress() + "掉线");
     }
 
@@ -71,6 +77,7 @@ public class MyWebSocketHandler extends SimpleChannelInboundHandler<Object> {
      */
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+        //发送完消息刷新一下缓存
         ctx.flush();
     }
 
@@ -78,6 +85,7 @@ public class MyWebSocketHandler extends SimpleChannelInboundHandler<Object> {
      * 当出现 Throwable 对象才会被调用，即当 Netty 由于 IO 错误或者处理器在处理事件时抛出的异常时。
      * 在大部分情况下，捕获的异常应该被记录下来并且把关联的 channel 给关闭掉。
      */
+    //当程序出现错误的时候走这个方法
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         Channel incoming = ctx.channel();
